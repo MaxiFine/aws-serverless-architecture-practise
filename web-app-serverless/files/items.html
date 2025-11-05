@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Items — Sample App</title>
+    <meta name="description" content="Manage items via the backend API." />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="header">
+      <div class="container nav">
+        <a href="./index.html" class="brand">
+          <span class="logo">WA</span>
+          <span class="brand-text">AWS Starter · Web EC2</span>
+        </a>
+        <nav class="menu">
+          <a href="./items.html">Items</a>
+          <a href="./about.html">About</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="container main" aria-labelledby="items-title">
+      <section class="card">
+        <h1 id="items-title">Items</h1>
+        <p>
+          Create and view items backed by your API. Authentication may be
+          required.
+        </p>
+
+        <!-- Health Section -->
+        <div id="health" class="text-center muted" style="margin: 8px 0 16px">
+          Checking API health...
+        </div>
+
+        <!-- Add Item Form -->
+        <form id="itemForm" style="margin-bottom: 16px">
+          <div>
+            <input
+              id="itemName"
+              type="text"
+              placeholder="Enter new item"
+              class="input"
+              style="width: 100%"
+              required
+            />
+          </div>
+          <div class="text-center" style="margin-top: 12px">
+            <button id="addBtn" type="submit" class="btn btn-primary">
+              <span class="btn-label">Add</span>
+            </button>
+          </div>
+        </form>
+
+        <!-- Items List -->
+        <ul id="itemsList" class="grid" style="gap: 8px; margin-top: 16px"></ul>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>

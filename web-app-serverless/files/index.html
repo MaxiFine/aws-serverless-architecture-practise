@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Welcome — Sample App</title>
+    <meta
+      name="description"
+      content="A modern sample landing page for the frontend."
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="header">
+      <div class="container nav">
+        <a href="./index.html" class="brand">
+          <span class="logo">WA</span>
+          <span class="brand-text">AWS Starter · Web EC2</span>
+        </a>
+        <nav class="menu">
+          <a href="./items.html">Items</a>
+          <a href="./about.html">About</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="container main" aria-labelledby="welcome-title">
+      <section class="card">
+        <h1 id="welcome-title">AWS Web EC2 Scenario — Frontend Starter</h1>
+        <p>
+          A minimal, production-friendly frontend you can drop into S3 and serve
+          with CloudFront. Use it to validate your backend, demo features, or
+          bootstrap a real app fast.
+        </p>
+
+        <div class="stack" style="margin-top: 16px">
+          <a class="btn btn-primary" href="./items.html">Add / View Items</a>
+          <a class="btn btn-outline" href="./about.html">About this project</a>
+        </div>
+
+        <div class="grid features" style="margin-top: 24px">
+          <div class="tile">
+            <h3>S3 + CloudFront</h3>
+            <p>Private S3 with OAC and global CDN delivery.</p>
+          </div>
+          <div class="tile">
+            <h3>Simple UI</h3>
+            <p>Clean, readable defaults without a build step.</p>
+          </div>
+          <div class="tile">
+            <h3>Zero build</h3>
+            <p>No tooling required — just upload the files.</p>
+          </div>
+          <div class="tile">
+            <h3>API routing</h3>
+            <p>Route <code>/api/*</code> from CloudFront to your ALB.</p>
+          </div>
+          <div class="tile">
+            <h3>Auth ready</h3>
+            <p>Optional Lambda@Edge + Cognito PKCE gateway.</p>
+          </div>
+          <div class="tile">
+            <h3>Clean defaults</h3>
+            <p>Accessible HTML, sensible copy, and sane structure.</p>
+          </div>
+        </div>
+
+        <hr class="divider" />
+
+        <h2>Quick start</h2>
+        <ol>
+          <li>
+            Edit files under <code>web-ec2-scenario/files/</code> (e.g.,
+            <code>index.html</code>, <code>items.html</code>).
+          </li>
+          <li>
+            Upload to the provisioned frontend S3 bucket and wait for CloudFront
+            propagation.
+          </li>
+          <li>
+            Open <a href="./items.html">Items</a> to test the backend API at
+            <code>/api</code>.
+          </li>
+          <li>
+            See <a href="./about.html">About</a> for architecture and deployment
+            steps.
+          </li>
+        </ol>
+
+        <hr class="divider" />
+
+        <h2>How it works</h2>
+        <div class="grid how">
+          <div class="tile">
+            <h3>Frontend</h3>
+            <p>
+              Static site in S3, served by CloudFront with an Origin Access
+              Control (OAC).
+            </p>
+          </div>
+          <div class="tile">
+            <h3>Backend</h3>
+            <p>
+              EC2 Auto Scaling behind an ALB, reachable via
+              <code>/api/*</code> path behavior.
+            </p>
+          </div>
+          <div class="tile">
+            <h3>Auth (optional)</h3>
+            <p>
+              Cognito + Lambda@Edge for viewer-request authentication using
+              PKCE.
+            </p>
+          </div>
+        </div>
+
+        <p class="muted" style="margin-top: 24px">
+          Customize this page in <code>web-ec2-scenario/files/index.html</code>.
+          Update copy, links, and sections to suit your app.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>
