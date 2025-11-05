@@ -158,5 +158,31 @@ If destroy reports a dependency error, wait a minute and run it again, or remove
 - Providers: `web-app-serverless/backend.tf` sets the AWS providers and remote state (S3) in `eu-west-1` and a `us-east-1` alias for Lambda@Edge.
 - Outputs: after `apply`, check everything via `terraform output`.
 
-That’s it — you can now deploy, view, and tear down the whole serverless stack with a handful of commands. If you want, we can also add a `deploy.ps1` / `deploy.sh` helper to automate these steps.
+That’s it — you can now deploy, view, and tear down the whole serverless stack with a handful of commands.
+
+## Shortcut: use the helper scripts
+
+Inside `web-app-serverless/` we added simple helpers that run the full flow and basic checks.
+
+- Git Bash / WSL (Linux/macOS):
+
+```
+cd serverless/web-app-serverless
+./deploy.sh                 # remote backend (S3) if available
+./deploy.sh --local         # use local state (no S3 backend)
+./deploy.sh --auto-approve  # non-interactive apply
+./deploy.sh --destroy --auto-approve  # tear everything down
+```
+
+- Windows PowerShell (wrapper calls Bash internally):
+
+```
+Set-Location serverless/web-app-serverless
+./deploy.ps1                # remote backend (S3) if available
+./deploy.ps1 -Local         # use local state (no S3 backend)
+./deploy.ps1 -AutoApprove   # non-interactive apply
+./deploy.ps1 -Destroy -AutoApprove  # tear everything down
+```
+
+Note: The project runs a couple of post-steps that require Bash. Using Git Bash or WSL is recommended on Windows.
 
