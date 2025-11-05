@@ -25,10 +25,11 @@ terraform {
   }
 
   backend "s3" {
-    bucket       = "learning-bucket-terraform-state"
+    bucket       = "test-practice-bucket-terraform-state"
     key          = "web-app-serverless/terraform.tfstate"
     region       = "eu-west-1"
-    use_lockfile = true
+    dynamodb_table = "terraform-state-locks"
+    # use_lockfile = true
   }
 
 
