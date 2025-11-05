@@ -186,3 +186,42 @@ Set-Location serverless/web-app-serverless
 
 Note: The project runs a couple of post-steps that require Bash. Using Git Bash or WSL is recommended on Windows.
 
+## Bootstrap remote state (bucket + lock table)
+
+If `terraform init` fails because the S3 bucket doesn’t exist, create the backend bucket and DynamoDB lock table once. You have three options:
+
+1) Quick local bootstrap (Git Bash/WSL):
+
+```
+cd serverless/web-app-serverless
+./bootstrap-state.sh                       # uses defaults
+BUCKET_NAME=my-unique-tf-state BUCKET_REGION=eu-west-1 TABLE_NAME=terraform-state-locks ./bootstrap-state.sh
+```
+
+2) Quick local bootstrap (PowerShell):
+
+```
+Set-Location serverless/web-app-serverless
+./bootstrap-state.ps1                                  # uses defaults
+./bootstrap-state.ps1 -BucketName my-unique-tf-state -BucketRegion eu-west-1 -TableName terraform-state-locks
+```
+
+3) GitHub Actions (recommended for teams):
+
+- Configure an AWS role for GitHub OIDC and add its ARN to repository secret `AWS_ROLE_TO_ASSUME`.
+- Run the workflow "Bootstrap Terraform Backend" from the Actions tab and provide:
+	- bucket-name (must be globally unique)
+	- aws-region (e.g., eu-west-1)
+	- lock-table-name (e.g., terraform-state-locks)
+
+Then update `web-app-serverless/backend.tf` if you changed names, ensuring it has:
+
+```
+backend "s3" {
+	bucket         = "<your-bucket>"
+	key            = "web-app-serverless/terraform.tfstate"
+	region         = "<your-region>"
+	dynamodb_table = "<your-lock-table>"
+}
+```
+
