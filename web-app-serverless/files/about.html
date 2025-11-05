@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>About — Sample App</title>
+    <meta name="description" content="About page for the sample frontend." />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="header">
+      <div class="container nav">
+        <a href="./index.html" class="brand">
+          <span class="logo">WA</span>
+          <span class="brand-text">AWS Starter · Web EC2</span>
+        </a>
+        <nav class="menu">
+          <a href="./items.html">Items</a>
+          <a href="./about.html">About</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="container main" aria-labelledby="about-title">
+      <section class="card">
+        <h1 id="about-title">AWS Infrastructure with Terraform</h1>
+        <p>
+          A complete AWS web application scenario using Terraform, split into
+          clear modules: backend, frontend, Lambda@Edge, and scripts/files.
+        </p>
+
+        <div style="margin-top: 12px">
+          <div>
+            • Backend: VPC, Security Groups, IAM, ASG/ALB, RDS, CloudWatch,
+            backend S3
+          </div>
+          <div>
+            • Frontend: Private S3 + CloudFront (OAC), optional ALB origin for
+            <code>/api/*</code>
+          </div>
+          <div>
+            • Lambda@Edge: Cognito PKCE auth gateway at CloudFront
+            viewer-request
+          </div>
+          <div>
+            • Scripts/Files: EC2 bootstrap script and static site assets
+          </div>
+        </div>
+
+        <h2>Architecture Diagram</h2>
+        <div class="image-frame" style="margin-top: 8px">
+          <img src="assets/day2-architecture.png" alt="WEB APP EC2 SCENARIO" />
+        </div>
+
+        <h2>Project Structure</h2>
+        <pre><code>.
+├── README.md
+├── backend                       # Backend infrastructure stack
+│   ├── README.md
+│   ├── main.tf
+│   ├── modules                   # Modular backend components
+│   │   ├── alb                   # Application Load Balancer
+│   │   ├── asg                   # Auto Scaling Group (EC2 + user_data)
+│   │   ├── cloudwatch            # Metrics & logging setup
+│   │   ├── cognito               # Cognito User Pool + App Client + Domain
+│   │   ├── iam                   # IAM roles and instance profiles
+│   │   ├── rds                   # RDS instance resource
+│   │   ├── s3                    # S3 bucket for backend artifacts/logs
+│   │   ├── sgroup                # Security Groups
+│   │   └── vpc                   # Networking (VPC, subnets, gateways, routes)
+│   ├── outputs.tf
+│   ├── providers.tf
+│   └── variables.tf
+├── backend.tf                    # Terraform backend configuration
+├── day2-architecture.png         # Architecture diagram
+├── files                         # Static frontend files (synced to S3)
+│   ├── index.html
+│   ├── items.html
+│   ├── script.js
+│   └── README.md
+├── frontend                      # Frontend infrastructure stack
+│   ├── README.md
+│   ├── main.tf
+│   ├── modules
+│   │   ├── cloudfront            # CDN distribution (S3 default origin + /api/* to ALB)
+│   │   └── s3                    # Private S3 bucket with OAC and policy
+│   ├── outputs.tf
+│   └── variables.tf
+├── lambda_edge                   # Lambda@Edge auth gateway
+│   ├── README.md
+│   ├── lambda_functions
+│   │   ├── index.mjs             # Viewer-request handler
+│   │   └── lib                   # Helpers: config, pkce, routes, utils
+│   ├── main.tf
+│   ├── outputs.tf
+│   ├── providers.tf
+│   └── variables.tf
+├── main.tf                       # Root module — orchestrates frontend & backend
+├── outputs.tf                    # Root-level outputs
+├── scripts                       # Scripts used during EC2 provisioning
+│   └── user_data.sh              # User data script for deploying backend
+├── terraform.tfvars              # Variable values (e.g., region, AMI)
+└── variables.tf                  # Root-level variables</code></pre>
+
+        <h2>Prerequisites</h2>
+        <ul>
+          <li>Terraform v1.12+ and AWS credentials configured</li>
+          <li>
+            Permissions to create IAM, Lambda, CloudFront, S3, ALB, Cognito, RDS
+          </li>
+          <li>
+            Lambda@Edge functions must be created in <code>us-east-1</code>;
+            CloudFront is global
+          </li>
+        </ul>
+
+        <h2>Module overview</h2>
+        <ul>
+          <li>
+            <code>backend/</code> provisions VPC, security, compute (ASG/ALB),
+            data (RDS), logging, and IAM.
+          </li>
+          <li>
+            <code>frontend/</code> provisions a private S3 bucket and a
+            CloudFront distribution; <code>/api/*</code> routes to ALB.
+          </li>
+          <li>
+            <code>lambda_edge/</code> deploys a viewer-request Lambda@Edge for
+            authentication (Cognito PKCE) and header injection.
+          </li>
+        </ul>
+
+        <h3>Backend application deployment</h3>
+        <p>
+          Use <code>scripts/user_data.sh</code> to bootstrap EC2 instances:
+          install runtime, fetch artifacts (S3/ECR), configure and start your
+          service.
+        </p>
+
+        <h3>Frontend content deployment</h3>
+        <ul>
+          <li>
+            Place static assets in <code>files/</code> (e.g.,
+            <code>index.html</code>, <code>script.js</code>).
+          </li>
+          <li>
+            Set <code>default_root_object</code> (e.g., <code>index.html</code>)
+            for CloudFront root.
+          </li>
+          <li>
+            Re-run <code>terraform apply</code> to sync; CloudFront propagation
+            can take minutes.
+          </li>
+        </ul>
+
+        <h2>Typical developer loop</h2>
+        <ol>
+          <li>
+            Edit static files under <span class="font-mono">files/</span> →
+            apply to sync to S3.
+          </li>
+          <li>
+            Adjust protected routes in
+            <span class="font-mono"
+              >lambda_edge/lambda_functions/lib/routes.mjs</span
+            >
+            → apply.
+          </li>
+          <li>
+            Update backend (ASG user_data, ALB) → apply; allow for CloudFront
+            propagation.
+          </li>
+        </ol>
+
+        <h2>Deployment Steps</h2>
+        <ol>
+          <li>Initialize: <span class="font-mono">terraform init</span></li>
+          <li>Validate: <span class="font-mono">terraform validate</span></li>
+          <li>
+            Plan:
+            <span class="font-mono"
+              >terraform plan -var-file="terraform.tfvars"</span
+            >
+          </li>
+          <li>
+            Apply:
+            <span class="font-mono"
+              >terraform apply -var-file="terraform.tfvars"</span
+            >
+          </li>
+          <li>
+            Destroy (when needed):
+            <span class="font-mono"
+              >terraform destroy -var-file="terraform.tfvars"</span
+            >
+          </li>
+        </ol>
+
+        <h2>Troubleshooting & teardown</h2>
+        <h3>Error deleting Lambda Function (replicated Lambda@Edge)</h3>
+        <p>
+          Cause: versions are replicated to edge locations and cannot be deleted
+          while associated with a distribution.
+        </p>
+        <ul>
+          <li>
+            Quick fix: rerun <span class="font-mono">terraform destroy</span> —
+            eventual consistency often resolves it.
+          </li>
+          <li>
+            If persistent: remove Lambda@Edge associations, apply, wait for
+            propagation, delete versions in
+            <span class="font-mono">us-east-1</span>, then destroy again.
+          </li>
+        </ul>
+      </section>
+    </main>
+  </body>
+</html>

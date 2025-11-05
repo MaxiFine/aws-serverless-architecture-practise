@@ -1,0 +1,1 @@
+{"CLIENT_ID":"6v503u5ju55gmh7noknsn1877p","COGNITO_DOMAIN":"web-serverless-517798689069-domain.auth.eu-west-1.amazoncognito.com","PROTECTED_RULES":[{"methods":["POST"],"prefix":"/api/items"},{"methods":[],"prefix":"/items.html"}],"REDIRECT_PATH":"/callback","REGION":"eu-west-1","SCOPES":"openid email profile","USER_POOL_ID":"eu-west-1_AYQzCQJ2L"}

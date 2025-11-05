@@ -1,0 +1,200 @@
+/**
+ * ============================================================================
+ * GuardDuty Module
+ * ============================================================================
+ * This module enables AWS GuardDuty for threat detection and security
+ * monitoring of the serverless web application infrastructure including:
+ * - Malicious activity detection
+ * - Unusual API calls monitoring
+ * - VPC Flow Logs analysis
+ * - DNS monitoring
+ * - S3 protection
+ * ============================================================================
+ */
+
+# Use existing GuardDuty detector and ensure it's enabled
+data "aws_guardduty_detector" "existing" {}
+
+# Manage the existing detector to ensure it's enabled
+resource "aws_guardduty_detector" "enable_existing" {
+  count = "${length(data.aws_guardduty_detector.existing.id) > 0 ? 1 : 0}"
+  enable                       = true
+  finding_publishing_frequency = var.finding_publishing_frequency
+
+  tags = merge(var.tags, {
+    Name = "${var.project_name}-guardduty-detector"
+  })
+}
+
+# Local value to get the detector ID
+locals {
+  detector_id = aws_guardduty_detector.enable_existing.id
+}
+
+# Enable S3 logs feature separately
+resource "aws_guardduty_detector_feature" "s3_logs" {
+  detector_id = local.detector_id
+  name        = "S3_DATA_EVENTS"
+  status      = "ENABLED"
+  
+  # depends_on = [aws_guardduty_detector.enable_existing]
+}
+
+
+
+# SNS Topic for GuardDuty alerts
+resource "aws_sns_topic" "guardduty_alert" {
+  name = "${var.project_name}-guardduty-alerts"
+}
+
+resource "aws_sns_topic_subscription" "guardduty_alert_email" {
+  topic_arn = aws_sns_topic.guardduty_alert.arn
+  protocol  = "email"
+  endpoint  = var.alert_email
+  
+}
+
+# S3 Bucket for GuardDuty findings - always created for monitoring
+resource "aws_s3_bucket" "guardduty_findings" {
+  bucket = "${var.project_name}-guardduty-findings-${random_id.bucket_suffix.hex}"
+
+  tags = merge(var.tags, {
+    Name = "${var.project_name}-guardduty-findings"
+  })
+}
+
+resource "random_id" "bucket_suffix" {
+  byte_length = 4
+}
+
+resource "aws_s3_bucket_public_access_block" "guardduty_findings" {
+  bucket = aws_s3_bucket.guardduty_findings.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "guardduty_findings" {
+  bucket = aws_s3_bucket.guardduty_findings.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+# Data source to get current AWS account and region info
+data "aws_caller_identity" "current" {}
+data "aws_region" "current" {}
+
+# GuardDuty Publishing Destination - using AWS managed key
+resource "aws_guardduty_publishing_destination" "main" {
+  detector_id     = local.detector_id
+  destination_arn = aws_s3_bucket.guardduty_findings.arn
+  kms_key_arn     = "arn:aws:kms:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:alias/aws/s3"
+
+  depends_on = [aws_s3_bucket_policy.guardduty_findings]
+}
+
+# S3 Bucket Policy for GuardDuty
+resource "aws_s3_bucket_policy" "guardduty_findings" {
+  bucket = aws_s3_bucket.guardduty_findings.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "Allow GuardDuty to put objects"
+        Effect = "Allow"
+        Principal = {
+          Service = "guardduty.amazonaws.com"
+        }
+        Action   = "s3:PutObject"
+        Resource = "${aws_s3_bucket.guardduty_findings.arn}/*"
+      },
+      {
+        Sid    = "Allow GuardDuty to get bucket ACL"
+        Effect = "Allow"
+        Principal = {
+          Service = "guardduty.amazonaws.com"
+        }
+        Action   = "s3:GetBucketAcl"
+        Resource = aws_s3_bucket.guardduty_findings.arn
+      },
+      {
+        Sid    = "Allow GuardDuty to get bucket location"
+        Effect = "Allow"
+        Principal = {
+          Service = "guardduty.amazonaws.com"
+        }
+        Action   = "s3:GetBucketLocation"
+        Resource = aws_s3_bucket.guardduty_findings.arn
+      }
+    ]
+  })
+}
+
+# CloudWatch Event Rule for GuardDuty findings
+resource "aws_cloudwatch_event_rule" "guardduty_findings" {
+  name        = "${var.project_name}-guardduty-findings"
+  description = "Capture GuardDuty findings"
+
+  event_pattern = jsonencode({
+    source      = ["aws.guardduty"]
+    detail-type = ["GuardDuty Finding"]
+  })
+
+  tags = merge(var.tags, {
+    Name = "${var.project_name}-guardduty-event-rule"
+  })
+}
+
+# CloudWatch Event Target - SNS Topic (only if SNS topic ARN is provided)
+resource "aws_cloudwatch_event_target" "sns" {
+  # count     = var.sns_topic_arn != "" ? 1 : 0
+  rule      = aws_cloudwatch_event_rule.guardduty_findings.name
+  target_id = "SendToSNS"
+  arn       = aws_sns_topic.guardduty_alert.arn
+}
+
+# CloudWatch Log Group for GuardDuty events
+resource "aws_cloudwatch_log_group" "guardduty_logs" {
+  name              = "/aws/guardduty/${var.project_name}"
+  retention_in_days = var.log_retention_days
+
+  tags = merge(var.tags, {
+    Name = "${var.project_name}-guardduty-logs"
+  })
+}
+
+# GuardDuty Threat Intelligence Set (optional)
+# resource "aws_guardduty_threatintelset" "mainguard" {
+#   count       = var.threat_intel_set_location != "" ? 1 : 0
+#   activate    = true
+#   detector_id = local.detector_id
+#   format      = "TXT"
+#   location    = var.threat_intel_set_location
+#   name        = "${var.project_name}-threat-intel-set"
+
+#   tags = merge(var.tags, {
+#     Name = "${var.project_name}-threat-intel-set"
+#   })
+# }
+
+# GuardDuty IP Set for trusted IPs (optional)
+# resource "aws_guardduty_ipset" "trusted" {
+#   count       = var.trusted_ip_set_location != "" ? 1 : 0
+#   activate    = true
+#   detector_id = local.detector_id
+#   format      = "TXT"
+#   location    = var.trusted_ip_set_location
+#   name        = "${var.project_name}-trusted-ip-set"
+
+#   tags = merge(var.tags, {
+#     Name = "${var.project_name}-trusted-ip-set"
+#   })
+# }
+
